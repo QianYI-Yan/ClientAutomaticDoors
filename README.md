@@ -18,5 +18,3 @@
 - 支持所有有原版标签的方块。
 - 支持《Dramatic Doors》。
 - 提供API `phoupraw.mcmod.client_auto_door.events.ToggledBlockState.EVENT`供其它模组注册自定义方块。
-
-[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
