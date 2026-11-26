@@ -1,8 +1,8 @@
 package phoupraw.mcmod.client_auto_door.datagen;
 
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricLanguageProvider;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.core.HolderLookup;
 import phoupraw.mcmod.client_auto_door.ClientAutomaticDoors;
 
 import java.util.concurrent.CompletableFuture;
@@ -10,18 +10,18 @@ import java.util.concurrent.CompletableFuture;
 import static phoupraw.mcmod.client_auto_door.ClientAutomaticDoors.ID;
 
 final class EnglishGen extends FabricLanguageProvider {
-    EnglishGen(FabricDataOutput dataOutput, CompletableFuture<RegistryWrapper.WrapperLookup> registryLookup) {
+    EnglishGen(FabricPackOutput dataOutput, CompletableFuture<HolderLookup.Provider> registryLookup) {
         super(dataOutput, registryLookup);
     }
     @Override
-    public void generateTranslations(RegistryWrapper.WrapperLookup registryLookup, TranslationBuilder b) {
+    public void generateTranslations(HolderLookup.Provider registryLookup, TranslationBuilder b) {
         String modName = "Client Automatic Doors";
         b.add(ClientAutomaticDoors.NAME_KEY, modName);
         b.add("modmenu.summaryTranslation." + ID, "Automatically open and close door.");
         b.add("modmenu.descriptionTranslation." + ID, """
           Automatically open and close door, trapdoor, fence gate. 
-          Run command `/trilevel_config current|global client_auto_door.json set on 0` to disable the mod in current|all saves.
-          Run command `/trilevel_config current|global client_auto_door.json set on` to enable the mod in current|all saves.
+          Run command `/trilevel_config global client_auto_door.json set on 0` to disable the mod.
+          Run command `/trilevel_config global client_auto_door.json set on 1` to enable the mod.
           """);
         //b.add(Trifle.NAME_KEY, "Torches in Water");
         //b.add("modmenu.summaryTranslation." + ID, "Place torches in water!");

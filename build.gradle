@@ -1,10 +1,12 @@
 //file:noinspection GroovyAssignabilityCheck
 plugins {
-    id 'fabric-loom' version '1.7-SNAPSHOT'
+    // 26.x 是非混淆版本（Mojang 直接发布映射后的 jar），需用 net.fabricmc.fabric-loom 插件（跳过 remap）
+    id 'net.fabricmc.fabric-loom' version '1.17.19'
     id 'maven-publish'
 }
 
-version = project.mod_version
+// 版本号规则：MC版本-构建次数
+version = "${minecraft}-${mod_version}"
 group = project.maven_group
 
 base {
@@ -89,12 +91,11 @@ fabricApi {
 dependencies {
     //## 基础依赖
     minecraft "com.mojang:minecraft:${minecraft}"
-    mappings "net.fabricmc:yarn:${yarn_mappings}:v2"
-    modApi "net.fabricmc:fabric-loader:${loader}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${fabric_api}"
+    implementation "net.fabricmc:fabric-loader:${loader}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api}"
     //## mod依赖
-    modLocalRuntime modCompileOnly("com.terraformersmc:modmenu:${modmenu}")
-    include(modLocalRuntime(modCompileOnly("phoupraw.mcmod:TrilevelConfig-1.21:+")))
+    compileOnly "com.terraformersmc:modmenu:${modmenu}"
+    //include(implementation("phoupraw.mcmod:TrilevelConfig-26.3:+"))
     //modLocalRuntime modCompileOnly("dev.isxander:yet-another-config-lib:${yacl}")
     //modLocalRuntime modCompileOnly("dev.emi:emi-fabric:${emi}")
     /////*modLocalRuntime*/ modCompileOnly("me.shedaniel:RoughlyEnoughItems-fabric:${rei}")
@@ -102,7 +103,6 @@ dependencies {
     ///*modLocalRuntime*/ modCompileOnly("curse.maven:ftb-ultimine-fabric-448231:5448788")
     //modApi("dev.emi:trinkets:${trinkets}")
     //## 非mod依赖
-    compileOnlyApi annotationProcessor("org.projectlombok:lombok:${lombok}")
     //## 非依赖
 }
 
@@ -115,7 +115,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 21
+    it.options.release = 25
 }
 
 java {
@@ -124,8 +124,8 @@ java {
     // If you remove this line, sources will not be generated.
     withSourcesJar()
 
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
@@ -150,16 +150,6 @@ publishing {
     }
 }
 
-String builtJarName() {
-    return "${archives_base_name}+${minecraft}+${version}"
-}
-
-remapJar {
-    archiveFileName.set("${builtJarName()}.jar")
-}
-remapSourcesJar {
-    archiveFileName.set("${builtJarName()}+sources.jar")
-}
 loom {
     accessWidenerPath = file("src/main/resources/${mod_id}.accessWidener")
     runs {
@@ -169,6 +159,11 @@ loom {
         }
         client {
             programArg("--username=Phoupraw")
+            // 复用 PCL 已下载的资源，避免再走 Mojang 官方源（国内易失败）
+            programArgs("--assetsDir", "D:/minecraft/Dev/assets", "--assetIndex", "34")
+            if (project.hasProperty("quickPlayWorld")) {
+                programArgs("--quickPlaySingleplayer", project.property("quickPlayWorld").toString())
+            }
         }
     }
 }

@@ -6,21 +6,21 @@ import it.unimi.dsi.fastutil.objects.ObjectLongPair;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.MovementType;
-import net.minecraft.util.function.BooleanBiFunction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockCollisionSpliterator;
-import net.minecraft.world.RedstoneView;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.BlockCollisions;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.SignalGetter;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.BooleanOp;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.ApiStatus;
 import phoupraw.mcmod.client_auto_door.events.BlockShapeToggler;
 import phoupraw.mcmod.client_auto_door.mixin.minecraft.AEntity;
@@ -34,30 +34,30 @@ import java.util.Map;
 @Environment(EnvType.CLIENT)
 @ApiStatus.Internal
 public interface MMClientPlayerEntity {
-    static void openDoor(ClientPlayerEntity self0, MovementType movementType, Vec3d movement, MinecraftClient client) {
+    static void openDoor(LocalPlayer self0, MoverType movementType, Vec3 movement, Minecraft client) {
         //Input input = self.input;
         //if (input==null)return;
-        if (movementType != MovementType.SELF /*|| self.hasVehicle()*/) return;
-        var self = (ClientPlayerEntity & APlayerEntity) self0;
-        //ClientPlayerInteractionManager interactor = client.interactionManager;
+        if (movementType != MoverType.SELF /*|| self.hasVehicle()*/) return;
+        var self = (LocalPlayer & APlayerEntity) self0;
+        //ClientPlayerInteractionManager interactor = client.gameMode;
         //if (interactor == null) return;
         var vehicle = (Entity & AEntity) self.getRootVehicle();
         if (!Vanilla.shouldAct(client, self, vehicle)) return;
-        double step = Math.max(0, vehicle.invokeAdjustMovementForCollisions(movement.withAxis(Direction.Axis.Y, 0)).getY());
-        Vec3d movement1 = movement.withAxis(Direction.Axis.Y, Math.max(0, movement.getY() - step));
-        World world = self.getWorld();
-        Box vehicleBox = vehicle.getBoundingBox().offset(0, step, 0);
+        double step = Math.max(0, vehicle.invokeCollide(movement.with(Direction.Axis.Y, 0)).y);
+        Vec3 movement1 = movement.with(Direction.Axis.Y, Math.max(0, movement.y - step));
+        Level world = self.level();
+        AABB vehicleBox = vehicle.getBoundingBox().move(0, step, 0);
         try (var t = Transaction.openOuter()) {
-            var vehicleShape = VoxelShapes.cuboid(vehicleBox);
+            var vehicleShape = Shapes.create(vehicleBox);
             Map<BlockPos, VoxelShape> shapes = new Object2ObjectOpenHashMap<>();
-            float height = self.getHeight();
-            for (var iter = new BlockCollisionSpliterator<>(world, vehicle, vehicleBox.stretch(movement1), false, Pair::of); iter.hasNext(); ) {
+            float height = self.getBbHeight();
+            for (var iter = new BlockCollisions<>(world, vehicle, vehicleBox.expandTowards(movement1), false, Pair::of); iter.hasNext(); ) {
                 var pair = iter.next();
                 VoxelShape shape = pair.second();
-                if (VoxelShapes.matchesAnywhere(shape, vehicleShape, BooleanBiFunction.AND)) {
+                if (Shapes.joinIsNotEmpty(shape, vehicleShape, BooleanOp.AND)) {
                     continue;
                 }
-                BlockPos pos = pair.first().toImmutable();
+                BlockPos pos = pair.first().immutable();
                 BlockState state = world.getBlockState(pos);
                 BlockShapeToggler toggler = BlockShapeToggler.LOOKUP.find(world, pos, state, null, vehicle);
                 if (toggler == null) continue;
@@ -66,9 +66,9 @@ public interface MMClientPlayerEntity {
                     Collection<BlockPos> positions = toggler.toggle(self, t2);
                     if (positions.isEmpty()) return;
                     for (BlockPos pos1 : positions) {
-                        for (Direction direction : RedstoneView.DIRECTIONS) {
-                            BlockPos pos2 = pos1.offset(direction);
-                            if (!world.getBlockState(pos2).canPlaceAt(world, pos2)) {
+                        for (Direction direction : SignalGetter.DIRECTIONS) {
+                            BlockPos pos2 = pos1.relative(direction);
+                            if (!world.getBlockState(pos2).canSurvive(world, pos2)) {
                                 break open;
                             }
                         }
@@ -80,16 +80,16 @@ public interface MMClientPlayerEntity {
             if (vehicle == self && height > MCUtils.getHeight(self)) {
                 return;
             }
-            var adjusted = VoxelShapes.cuboid(vehicleBox.stretch(vehicle.invokeAdjustMovementForCollisions(movement)));
+            var adjusted = Shapes.create(vehicleBox.expandTowards(vehicle.invokeCollide(movement)));
             for (var shape : shapes.values()) {
-                if (!VoxelShapes.matchesAnywhere(shape, adjusted, BooleanBiFunction.AND)) {
+                if (!Shapes.joinIsNotEmpty(shape, adjusted, BooleanOp.AND)) {
                     return;
                 }
             }
             t.commit();
             for (BlockPos pos : shapes.keySet()) {
                 if (!Vanilla.OPENEDS.containsKey(pos)) {
-                    Vanilla.OPENEDS.put(pos, ObjectLongPair.of(world.getBlockState(pos), world.getTime()));
+                    Vanilla.OPENEDS.put(pos, ObjectLongPair.of(world.getBlockState(pos), world.getGameTime()));
                 }
             }
         }

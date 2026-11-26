@@ -9,8 +9,9 @@ Automatically open and close door, trapdoor, fence gate.
 
 Purely client side mod. Based on movement data in client, it predicts doors that will barricates player moving, and then opens it. It immediatly closes doors when player enters, making doors not barricate player moving and won't let other living in. It also works while in air or riding. It won't open door that is lower than player.
 ## Config
-- Run command `/trilevel_config current|global client_auto_door.json set on 0` to disable the mod in current|all saves.
-- Run command `/trilevel_config current|global client_auto_door.json set on` to enable the mod in current|all saves.
+- Run command `/trilevel_config global client_auto_door.json set on 0` to disable the mod.
+- Run command `/trilevel_config global client_auto_door.json set on 1` to enable the mod.
+- You can also edit `on` in `config/client_auto_door.json` directly.
 ## Compability
 - Support all blocks that have vanilla tags.
 - Support _Dramatic Doors_.

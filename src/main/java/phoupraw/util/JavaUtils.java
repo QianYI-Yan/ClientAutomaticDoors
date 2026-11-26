@@ -1,6 +1,5 @@
 package phoupraw.util;
 
-import lombok.SneakyThrows;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.function.BiFunction;
@@ -20,8 +19,11 @@ public interface JavaUtils {
         return second;
     }
     @SuppressWarnings("unchecked")
-    @SneakyThrows
     static <T> Class<T> findClassOrThrow(String className) {
-        return (Class<T>) Class.forName(className);
+        try {
+            return (Class<T>) Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

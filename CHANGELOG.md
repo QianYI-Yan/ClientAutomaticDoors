@@ -27,3 +27,8 @@
 - 即使开门后仍无法通过也会开门。
 - 即使玩家无碰撞箱也会开关门。
 - 1刻内多次移动可能提前关门导致服务端玩家移动错误。
+# 26.3-1
+## 更改
+- 移植到 Minecraft 26.3（非混淆版本，需要 Java 25）。
+- 内置配置系统替代 TrilevelConfig，仅保留全局开关；不再支持按存档开关。
+- 自定义方块注册 API 由 fabric `BlockApiLookup` 改为 `BlockShapeToggler.LOOKUP.registerFallback`（fabric 26.3 已移除 BlockApiLookup）。

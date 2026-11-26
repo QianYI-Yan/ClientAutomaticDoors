@@ -7,26 +7,26 @@ import it.unimi.dsi.fastutil.objects.ObjectLongPair;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.Items;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import phoupraw.mcmod.client_auto_door.config.CADConfigs;
+import phoupraw.mcmod.client_auto_door.config.Configs;
 import phoupraw.mcmod.client_auto_door.events.BlockShapeToggler;
 import phoupraw.mcmod.client_auto_door.togglers.DoorToggler;
 import phoupraw.mcmod.client_auto_door.togglers.OpenToggler;
-import phoupraw.mcmod.trilevel_config.api.ClientConfigs;
 import phoupraw.mcmod.util.MCUtils;
 
 import java.util.Collection;
@@ -40,27 +40,27 @@ public interface Vanilla {
       .thenComparingInt(Vec3i::getX)
       .thenComparingInt(Vec3i::getZ);
     Map<BlockPos, ObjectLongPair<BlockState>> OPENEDS = new Object2ObjectRBTreeMap<>(COMPARATOR);
-    static boolean shouldAct(MinecraftClient client, ClientPlayerEntity player, Entity vehicle) {
-        if (!ClientConfigs.getOrCreate(CADConfigs.PATH).get(CADConfigs.ON)) return false;
+    static boolean shouldAct(Minecraft client, LocalPlayer player, Entity vehicle) {
+        if (!Configs.getOrCreateGlobal(CADConfigs.PATH).get(CADConfigs.ON)) return false;
         if (client.player != player) return false;//防止自由相机
-        if (player.isSneaking() || vehicle.noClip) return false;
-        if (FabricLoader.getInstance().isModLoaded("litematica") && (player.getMainHandStack().isOf(Items.STICK) || player.getOffHandStack().isOf(Items.STICK))) {
+        if (player.isShiftKeyDown() || vehicle.noPhysics) return false;
+        if (FabricLoader.getInstance().isModLoaded("litematica") && (player.getMainHandItem().getItem() == Items.STICK || player.getOffhandItem().getItem() == Items.STICK)) {
             return false;
         }
-        if (FabricLoader.getInstance().isModLoaded("worldedit") && (player.getMainHandStack().isOf(Items.WOODEN_AXE))) {
+        if (FabricLoader.getInstance().isModLoaded("worldedit") && (player.getMainHandItem().getItem() == Items.WOODEN_AXE)) {
             return false;
         }
         return true;
     }
     //FIXME 在一竖列活板门上跳会关门导致趴下
     @ApiStatus.Internal
-    static void close(ClientWorld world) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+    static void close(ClientLevel world) {
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
         if (player == null) return;
         var vehicle = player.getRootVehicle();
         if (!shouldAct(client, player, vehicle)) return;
-        var interactor = client.interactionManager;
+        var interactor = client.gameMode;
         if (interactor == null) return;
         Long2ObjectMap<Map<BlockPos, BlockState>> timeGrouped = new Long2ObjectArrayMap<>(3);
         for (var entry : OPENEDS.entrySet()) {
@@ -72,9 +72,9 @@ public interface Vanilla {
             }
             openeds.put(entry.getKey(), entry.getValue().first());
         }
-        float height = player.getHeight();
+        float height = player.getBbHeight();
         for (var timeEntry : timeGrouped.long2ObjectEntrySet()) {
-            long elapsed = world.getTime() - timeEntry.getLongKey();
+            long elapsed = world.getGameTime() - timeEntry.getLongKey();
             if (elapsed <= 0) continue;
             try (var t = Transaction.openOuter()) {
                 Collection<BlockPos> removed = new ObjectOpenHashSet<>();
@@ -103,11 +103,11 @@ public interface Vanilla {
         }
     }
     @ApiStatus.Internal
-    static @Nullable BlockShapeToggler findTrapdoorAndFencGate(World world, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, Entity context) {
-        return (state.isIn(BlockTags.TRAPDOORS) && !state.isOf(Blocks.IRON_TRAPDOOR) || state.isIn(BlockTags.FENCE_GATES)) && state.contains(DoorBlock.OPEN) ? new OpenToggler(world, pos, state) : null;
+    static @Nullable BlockShapeToggler findTrapdoorAndFencGate(Level world, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, Entity context) {
+        return ((state.is(BlockTags.TRAPDOORS, s -> true) && state.getBlock() != Blocks.IRON_TRAPDOOR) || state.is(BlockTags.FENCE_GATES, s -> true)) && state.hasProperty(DoorBlock.OPEN) ? new OpenToggler(world, pos, state) : null;
     }
     @ApiStatus.Internal
-    static @Nullable BlockShapeToggler findDoor(World world, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, Entity context) {
-        return state.isIn(BlockTags.DOORS) && !state.isOf(Blocks.IRON_DOOR) && state.contains(DoorBlock.OPEN) && state.contains(DoorBlock.HALF) ? new DoorToggler(world, pos, state) : null;
+    static @Nullable BlockShapeToggler findDoor(Level world, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, Entity context) {
+        return state.is(BlockTags.DOORS, s -> true) && state.getBlock() != Blocks.IRON_DOOR && state.hasProperty(DoorBlock.OPEN) && state.hasProperty(DoorBlock.HALF) ? new DoorToggler(world, pos, state) : null;
     }
 }

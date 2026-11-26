@@ -1,3 +1,5 @@
+已急哭并拿大肥鱼适配26.3
+----
 [中文](./README.md)
 [English](./README-en.md)
 # 客户端自动门
@@ -9,8 +11,9 @@
 
 纯粹的客户端模组，基于客户端的移动数据预判将要阻挡运动的门并打开，在进门后立刻关上，完全不阻碍移动且不会让其它生物跟随进门。在空中或者骑乘中也生效。不会自动打开比玩家位置更低的门。
 ## 配置
-- 执行命令`/trilevel_config current|global client_auto_door.json set on 0`以在当前或所有存档关闭此模组；
-- 执行命令`/trilevel_config current|global client_auto_door.json set on`以在当前或所有存档开启此模组。
+- 执行命令`/trilevel_config global client_auto_door.json set on 0`以关闭此模组；
+- 执行命令`/trilevel_config global client_auto_door.json set on 1`以开启此模组；
+- 也可以直接编辑`config/client_auto_door.json`中的`on`。
 ## 兼容性
 - 支持所有有原版标签的方块。
 - 支持《Dramatic Doors》。

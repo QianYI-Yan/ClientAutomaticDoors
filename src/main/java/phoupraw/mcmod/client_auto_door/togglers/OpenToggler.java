@@ -2,14 +2,14 @@ package phoupraw.mcmod.client_auto_door.togglers;
 
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
 import net.fabricmc.fabric.api.transfer.v1.transaction.base.SnapshotParticipant;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 import phoupraw.mcmod.client_auto_door.events.BlockShapeToggler;
@@ -19,27 +19,27 @@ import java.util.Collection;
 import java.util.Set;
 
 public class OpenToggler extends SnapshotParticipant<Boolean> implements BlockShapeToggler {
-    protected final World world;
+    protected final Level world;
     protected final BlockPos pos;
     protected final BlockState state;
-    public OpenToggler(World world, BlockPos pos, BlockState state) {
+    public OpenToggler(Level world, BlockPos pos, BlockState state) {
         this.world = world;
         this.pos = pos;
         this.state = state;
     }
     @Override
     protected Boolean createSnapshot() {
-        return getBlockState().get(DoorBlock.OPEN);
+        return getBlockState().getValue(DoorBlock.OPEN);
     }
     @Override
     protected void readSnapshot(Boolean snapshot) {
-        world.setBlockState(pos, getBlockState().with(DoorBlock.OPEN, snapshot), 0);
+        world.setBlock(pos, getBlockState().setValue(DoorBlock.OPEN, snapshot), 0);
     }
     protected BlockState getBlockState() {
         return world.getBlockState(pos);
     }
     @Override
-    public @NotNull @UnmodifiableView Collection<BlockPos> toggle(PlayerEntity player, @NotNull TransactionContext transaction) {
+    public @NotNull @UnmodifiableView Collection<BlockPos> toggle(Player player, @NotNull TransactionContext transaction) {
         updateSnapshots(transaction);
         readSnapshot(!createSnapshot());
         return Set.of(pos);
@@ -48,14 +48,14 @@ public class OpenToggler extends SnapshotParticipant<Boolean> implements BlockSh
     protected void onFinalCommit() {
         super.onFinalCommit();
         BlockState newState = getBlockState();
-        if (state.get(DoorBlock.OPEN) == newState.get(DoorBlock.OPEN)) {
+        if (state.getValue(DoorBlock.OPEN) == newState.getValue(DoorBlock.OPEN)) {
             return;
         }
-        readSnapshot(state.get(DoorBlock.OPEN));
-        var interactor = MinecraftClient.getInstance().interactionManager;
+        readSnapshot(state.getValue(DoorBlock.OPEN));
+        var interactor = Minecraft.getInstance().gameMode;
         if (interactor == null) return;
-        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
-        interactor.interactBlock(player, Hand.MAIN_HAND, MCUtils.getHitResult(world, pos, state, player));
+        interactor.useItemOn(player, InteractionHand.MAIN_HAND, MCUtils.getHitResult(world, pos, state, player));
     }
 }
