@@ -32,3 +32,5 @@
 - Ported to Minecraft 26.3 (non-obfuscated, requires Java 25).
 - Built-in config system replaces TrilevelConfig, only the global switch remains; per-save switch is removed.
 - Custom block registration API changed from fabric `BlockApiLookup` to `BlockShapeToggler.LOOKUP.registerFallback` (fabric 26.3 removed BlockApiLookup).
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)

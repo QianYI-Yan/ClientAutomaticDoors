@@ -16,3 +16,5 @@ Purely client side mod. Based on movement data in client, it predicts doors that
 - Support all blocks that have vanilla tags.
 - Support _Dramatic Doors_.
 - Provide API `phoupraw.mcmod.client_auto_door.events.ToggledBlockState.EVENT` for other mods to register custom blocks.
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)

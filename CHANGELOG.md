@@ -32,3 +32,5 @@
 - 移植到 Minecraft 26.3（非混淆版本，需要 Java 25）。
 - 内置配置系统替代 TrilevelConfig，仅保留全局开关；不再支持按存档开关。
 - 自定义方块注册 API 由 fabric `BlockApiLookup` 改为 `BlockShapeToggler.LOOKUP.registerFallback`（fabric 26.3 已移除 BlockApiLookup）。
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
